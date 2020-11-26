@@ -16,6 +16,8 @@ type Context struct {
 	Method string
 	// for Responseonse
 	StatusCode int
+	// for router
+	Params map[string]string
 }
 
 // Context Factory
@@ -26,6 +28,11 @@ func NewContext(response http.ResponseWriter, request *http.Request) *Context {
 		Path:     request.URL.Path,
 		Method:   request.Method,
 	}
+}
+
+func (c *Context) Param(key string) string {
+	value, _ := c.Params[key]
+	return value
 }
 
 func (c *Context) PostForm(key string) string {
