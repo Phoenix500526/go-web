@@ -3,6 +3,7 @@ package webpack
 import (
 	"log"
 	"net/http"
+	"strings"
 )
 
 type HandlerFunc func(*Context)
@@ -19,7 +20,7 @@ type (
 		// routing table
 		*RouterGroup
 		router *router
-		gs     []*RouterGroup // store all gs
+		groups []*RouterGroup // store all groups
 	}
 )
 
@@ -27,7 +28,7 @@ type (
 func New() *Engine {
 	engine := &Engine{router: newRouter()}
 	engine.RouterGroup = &RouterGroup{engine: engine}
-	engine.gs = []*RouterGroup{engine.RouterGroup}
+	engine.groups = []*RouterGroup{engine.RouterGroup}
 	return engine
 }
 
@@ -37,7 +38,7 @@ func (g *RouterGroup) Group(prefix string) *RouterGroup {
 		prefix: g.prefix + prefix,
 		engine: engine,
 	}
-	engine.gs = append(engine.gs, newGroup)
+	engine.groups = append(engine.groups, newGroup)
 	return newGroup
 }
 
@@ -59,7 +60,18 @@ func (e *Engine) Run(addr string) error {
 	return http.ListenAndServe(addr, e)
 }
 
+func (g *RouterGroup) Use(middlewares ...HandlerFunc) {
+	g.middlewares = append(g.middlewares, middlewares...)
+}
+
 func (e *Engine) ServeHTTP(respone http.ResponseWriter, request *http.Request) {
-	context := NewContext(respone, request)
+	var middlewares []HandlerFunc
+	for _, group := range e.groups {
+		if strings.HasPrefix(request.URL.Path, group.prefix) {
+			middlewares = append(middlewares, group.middlewares...)
+		}
+	}
+	context := newContext(respone, request)
+	context.handlers = middlewares
 	e.router.handle(context)
 }

@@ -18,21 +18,39 @@ type Context struct {
 	StatusCode int
 	// for router
 	Params map[string]string
+
+	// for middleware
+	handlers []HandlerFunc
+	index    int
 }
 
 // Context Factory
-func NewContext(response http.ResponseWriter, request *http.Request) *Context {
+func newContext(response http.ResponseWriter, request *http.Request) *Context {
 	return &Context{
 		Response: response,
 		Request:  request,
 		Path:     request.URL.Path,
 		Method:   request.Method,
+		index:    -1,
 	}
 }
 
 func (c *Context) Param(key string) string {
 	value, _ := c.Params[key]
 	return value
+}
+
+func (c *Context) Next() {
+	c.index++
+	s := len(c.handlers)
+	for ; c.index < s; c.index++ {
+		c.handlers[c.index](c)
+	}
+}
+
+func (c *Context) Fail(code int, err string) {
+	c.index = len(c.handlers)
+	c.JSON(code, H{"message": err})
 }
 
 func (c *Context) PostForm(key string) string {
