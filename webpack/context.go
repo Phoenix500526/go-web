@@ -22,6 +22,9 @@ type Context struct {
 	// for middleware
 	handlers []HandlerFunc
 	index    int
+
+	// Engine pointer
+	engine *Engine
 }
 
 // Context Factory
@@ -90,8 +93,10 @@ func (c *Context) Data(code int, data []byte) {
 	c.Response.Write(data)
 }
 
-func (c *Context) HTML(code int, html string) {
-	c.SetHeader("Content-Type", "application/json")
+func (c *Context) HTML(code int, name string, data interface{}) {
+	c.SetHeader("Content-Type", "text/html")
 	c.SetStatus(code)
-	c.Response.Write([]byte(html))
+	if err := c.engine.htmlTemplates.ExecuteTemplate(c.Response, name, data); err != nil {
+		c.Fail(500, err.Error())
+	}
 }
