@@ -31,7 +31,7 @@ func onlyForV2() webpack.HandlerFunc {
 }
 
 func main() {
-	w := webpack.New()
+	w := webpack.Default()
 	w.Use(webpack.Logger())
 	w.SetFuncMap(template.FuncMap{
 		"FormatAsDate": FormatAsDate,
@@ -58,6 +58,11 @@ func main() {
 			"title": "webpack",
 			"now":   time.Date(2020, 11, 27, 0, 0, 0, 0, time.UTC),
 		})
+	})
+
+	w.GET("/panic", func(c *webpack.Context) {
+		names := []string{"Phoenix"}
+		c.FormatResponse(http.StatusOK, names[100])
 	})
 	w.Run(":2020")
 }
